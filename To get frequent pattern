@@ -1,0 +1,154 @@
+Raw=list()
+while True:
+    try:
+        x=input().split(" ")
+        Raw.append(x)
+        if x==[' ']:
+            break
+    except:
+        break
+n=len(Raw)-1
+min_sup=list(map(int,Raw[0]))
+def create_1_itemset(Raw):
+    one_itemset=set()
+    for t in Raw[1:]:
+        for item in t:
+            itemset=frozenset([item])
+            one_itemset.add(itemset)
+    return one_itemset
+
+def delete_infrequent_item(min_sup,Raw,k_itemset,frequency_item):
+    frequent_itemset=set()
+    last_frequency_item=frequency_item.copy()
+    for t in Raw:
+        for item in k_itemset:
+            if item.issubset(t):
+                if item in frequency_item:
+                    item_list=list(item)
+                    frequency_item[item]+=t.count(item_list[0])
+                else:
+                    frequency_item[item]=1
+                    item_list=list(item)
+                    frequency_item[item]+=t.count(item_list[0])-1
+    item_for_loop=frequency_item.copy()
+    for item in item_for_loop:
+        if frequency_item[item]<min_sup:
+            del frequency_item[item]
+        else:
+            if item not in last_frequency_item:
+                frequent_itemset.add(item)
+    if len(frequent_itemset)!=0:
+        return frequency_item,frequent_itemset
+    else: 
+        return False
+
+def create_k_itemset(k_sub1_itemset,k):
+    k_itemset=set()
+    n=len(k_sub1_itemset)
+    list_sub_itemset=list(k_sub1_itemset)
+    for i in range(n):
+        for j in range(i,n):
+            trail_1=list(list_sub_itemset[i])
+            trail_1.sort()
+            trail_2=list(list_sub_itemset[j])
+            trail_2.sort()
+            if trail_1[0:k-2]==trail_2[0:k-2]:
+                k_item=list_sub_itemset[i]|list_sub_itemset[j]
+            k_itemset.add(k_item)
+            for item in k_item:
+                k_sub1_item=k_item-frozenset([item])
+                if k_sub1_item not in k_sub1_itemset:
+                    k_itemset.remove(k_item)
+                    break
+    return k_itemset
+
+#generate each itemset with support        
+one_itemset=create_1_itemset(Raw)
+frequency_item={}
+frequency_item, one_frequent_itemset=delete_infrequent_item(min_sup[0],Raw[1:],one_itemset,frequency_item)
+k_sub1_itemset=one_itemset
+try:
+    max_loop=max(len(Raw[i]) for i in range(1,n))
+except:
+    max_loop=len(Raw[1])
+for i in range(2,max_loop+1):
+    k_itemset=create_k_itemset(k_sub1_itemset,i)
+    try:
+        frequency_item_update,i_frequent_itemset=delete_infrequent_item(min_sup[0],Raw,k_itemset,frequency_item)
+    except:
+        break
+    k_sub1_itemset=k_itemset.copy()
+    frequency_item=frequency_item_update.copy()
+
+#sort items in each itemset
+ordered_itemset=sorted(frequency_item.items(), key=lambda x: (-x[1], x[0]))
+a=len(ordered_itemset)
+ordered_itemlist=list()
+for i in range(a):
+    y=list()
+    z=list(ordered_itemset[i][0])
+    z.sort()
+    y.append(list(z))
+    y.append(ordered_itemset[i][1])
+    ordered_itemlist.append(y)
+
+#print all the frequent patterns
+max_frequency=max(ordered_itemlist[i][1] for i in range(a))
+all_itemlist=list()
+for i in range(max_frequency,min_sup[0]-1,-1):
+    i_itemlist=list()
+    for j in range(a):
+        if ordered_itemlist[j][1]==i:
+            i_itemlist.append(ordered_itemlist[j][0])
+    n=len(i_itemlist)
+    i_itemlist.sort()
+    all_itemlist.append(i_itemlist)
+    for x in range(n):
+        str = ' '
+        print(i,'['+str.join(i_itemlist[x])+']')
+print()
+
+#print closed frequent patterns
+for i in range(len(all_itemlist)):
+    try:
+        n=len(all_itemlist[i][0])
+    except:
+        continue
+    closed_itemlist=all_itemlist[i].copy()
+    for t in all_itemlist[i]:
+        for item in all_itemlist[i]:
+            d=[False for c in t if c not in item]
+            if d :
+                continue
+            else:
+                if (t!=item):    
+                    closed_itemlist.remove(t)
+                    break
+    for x in range(len(closed_itemlist)):
+        str = ' '
+        sup=frequency_item[frozenset(closed_itemlist[x])]
+        print(sup,'['+str.join(closed_itemlist[x])+']')
+print()
+
+# print maximal frequent patterns
+maximal_itemset=list()
+for i in range(len(all_itemlist)):
+    try:
+        for t in all_itemlist[i]:
+            maximal_itemset.append(t)
+    except:
+        continue
+maximal_candidate=maximal_itemset.copy()
+for t in maximal_candidate:
+    for s in maximal_candidate:
+        d=[False for c in t if c not in s]
+        if d :
+            continue
+        else:
+            if (t!=s):    
+                maximal_itemset.remove(t)
+                break
+for x in range(len( maximal_itemset)):
+    str = ' '
+    sup=frequency_item[frozenset(maximal_itemset[x])]
+    print(sup,'['+str.join( maximal_itemset[x])+']')      
